@@ -1,3 +1,7 @@
+from copy import deepcopy
+from typing import Any, Optional, Union
+
+
 MAX_CONSTANTS: int = 10
 PROP: str = "pqrs"
 VAR: str = "abcdefghijxyzw"
@@ -9,7 +13,7 @@ DEBUG: bool = False
 
 
 class Var:   
-    def __init__(self, var: str | None) -> None:
+    def __init__(self, var: Optional[str]) -> None:
         if var is None or len(var) != 1 or var not in VAR:
             raise ValueError()
         self.val: str = var
@@ -17,12 +21,12 @@ class Var:
     def __repr__(self) -> str:
         return self.val
     
-    def __eq__(self, other) -> bool:
-        return self.val == other.val
+    def __eq__(self, other: Any) -> bool:
+        return isinstance(other, Var) and self.val == other.val
 
 
 class Prop:    
-    def __init__(self, prop: str | None) -> None:
+    def __init__(self, prop: Optional[str]) -> None:
         if prop is None or len(prop) != 1 or prop not in PROP:
             raise ValueError()
         self.val: str = prop
@@ -31,7 +35,7 @@ class Prop:
     def __repr__(self) -> str:
         return self.val
     
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, Prop) and self.val == other.val
     
     def isWrong(self) -> bool:
@@ -42,18 +46,17 @@ class Prop:
 
 
 class Negation:  
-    def __init__(self, a) -> None:
-        # a: str | Formula
+    def __init__(self, a: Union[str, Formula]) -> None:
         self.a: Formula = Formula(a) if type(a) is str else a
         self.is_fol: bool = self.a.is_fol
-        self._str = None
+        self._str: Optional[str] = None
     
     def __repr__(self) -> str:
         if self._str is None:
             self._str = f"~{self.a}"
         return self._str
     
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, Negation) and self.a == other.a
     
     def isWrong(self) -> bool:
@@ -65,7 +68,7 @@ class Negation:
 
 
 class BinaryConn:    
-    def __init__(self, conn: str | None) -> None:
+    def __init__(self, conn: Optional[str]) -> None:
         if conn is None or conn not in BINARY_CONN:
             raise ValueError()
         self.val: str = conn
@@ -80,14 +83,14 @@ class BinaryOp:
         self.conn: BinaryConn = BinaryConn(conn)
         self.b: Formula = Formula(b)
         self.is_fol: bool = self.a.is_fol or self.b.is_fol
-        self._str = None
+        self._str: Optional[str] = None
     
     def __repr__(self) -> str:
         if self._str is None:
             self._str = f"({self.a}{self.conn}{self.b})"
         return self._str
     
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, BinaryOp) and self.conn == other.conn and self.a == other.a and self.b == other.b
     
     def isWrong(self) -> bool:
@@ -100,7 +103,7 @@ class BinaryOp:
 
 
 class UnaryConn:    
-    def __init__(self, conn: str | None) -> None:
+    def __init__(self, conn: Optional[str]) -> None:
         if conn is None or conn not in UNARY_CONN:
             raise ValueError()
         self.val: str = conn
@@ -115,14 +118,14 @@ class UnaryOp:
         self.var: Var = Var(var)
         self.a: Formula = Formula(a)
         self.is_fol: bool = True
-        self._str = None
+        self._str: Optional[str] = None
     
     def __repr__(self) -> str:
         if self._str is None:
             self._str = f"{self.conn}{self.var}{self.a}"
         return self._str
     
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, UnaryOp) and self.conn == other.conn and self.var == other.var and self.a == other.a
     
     def isWrong(self) -> bool:
@@ -135,7 +138,7 @@ class UnaryOp:
 
 
 class Pred:    
-    def __init__(self, pred: str | None) -> None:
+    def __init__(self, pred: Optional[str]) -> None:
         if pred is None or len(pred) != 1 or pred not in PRED:
             raise ValueError()
         self.val: str = pred
@@ -156,14 +159,14 @@ class Atom:
         self.a: Var = Var(a)
         self.b: Var = Var(b)
         self.is_fol: bool = True
-        self._str = None
+        self._str: Optional[str] = None
     
     def __repr__(self) -> str:
         if self._str is None:
             self._str = f"{self.pred}({self.a},{self.b})"
         return self._str
     
-    def __eq__(self, other) -> bool:
+    def __eq__(self, other: Any) -> bool:
         return isinstance(other, Atom) and self.pred == other.pred and self.a == other.a and self.b == other.b
     
     def isWrong(self) -> bool:
@@ -178,20 +181,21 @@ class Atom:
             self._str = None
 
 
-TFormula = Prop | Negation | UnaryOp | BinaryOp | Atom
+TFormula = Union[Prop, Negation, UnaryOp, BinaryOp, Atom]
 Theory = tuple[list[TFormula], str, dict[str, str]]     # (Formulas, constants, gamma memory)
-Exp = tuple[str, TFormula, TFormula | str | None]
+Exp = tuple[str, TFormula, Union[TFormula, str, None]]
 
 
 class Formula:    
     def __init__(self, fmla: str) -> None:
-        self.fmla: TFormula | None = None
-        self.fmla_type: int | None = None
+        self.fmla: Optional[TFormula] = None
+        self.fmla_type: Optional[int] = None
         self.is_fol: bool = self.fmla.is_fol if self.fmla is not None else False
+        self.is_prop: bool = self.fmla.is_prop if self.fmla is not None else False
         self.lhs: str = ""
         self.conn: str = ""
         self.rhs: str = ""
-        self._str = None
+        self._str: Optional[str] = None
         
         try:
             if not fmla:
@@ -209,13 +213,13 @@ class Formula:
                 if fmla[0] in PRED and fmla[1] == '(' and fmla[2] in VAR and fmla[3] == ',' and fmla[4] in VAR and fmla[5] == ')':
                     self.fmla = Atom(fmla[0], fmla[2], fmla[4])
             else:
-                open_br: int = 0
+                op_br: int = 0
                 for i in range(len(fmla)):
                     if fmla[i] == '(':
-                        open_br += 1
+                        op_br += 1
                     elif fmla[i] == ')':
-                        open_br -= 1
-                    elif open_br == 1:
+                        op_br -= 1
+                    elif op_br == 1:
                         for c in BINARY_CONN:
                             if fmla[i:i+len(c)] == c:
                                 self.lhs = fmla[1:i]
@@ -224,6 +228,7 @@ class Formula:
                                 self.fmla = BinaryOp(self.lhs, self.conn, self.rhs)
                                 
             self.is_fol = self.fmla.is_fol if self.fmla is not None else False
+            self.is_prop = self.fmla.is_prop if self.fmla is not None else False
         except Exception as e:
             print(f"Failed:\n{e}")
             self.fmla = None
@@ -248,7 +253,7 @@ class Formula:
             
         fmla_type = type(self.fmla)
         
-        if self.fmla is None or self.isWrong():
+        if (self.is_fol and self.is_prop) or self.fmla is None or self.isWrong():
             self.fmla_type = 0
         elif fmla_type is Atom:
             self.fmla_type = 1
@@ -271,8 +276,8 @@ class Formula:
     def isSat(self) -> int:
         if self.fmla is None:
             return 0
-            
-        tab: list[Theory] = [([self.fmla], "", {})]
+        
+        tab = [([self.fmla], "", {})]
         if DEBUG: print("")
         while tab:
             if DEBUG: self._printTab(tab)
@@ -286,7 +291,7 @@ class Formula:
             # Pick first non-literal in sigma (or return sat if there are none)
             exp_type = exp_a = exp_b = psi_i = None
             for i in range(len(sigma)):
-                psi: TFormula = sigma[i]
+                psi = sigma[i]
                 curr_exp_type, curr_exp_a, curr_exp_b = self._expNode(psi)
                 if curr_exp_type == "alpha":
                     exp_type, exp_a, exp_b = curr_exp_type, curr_exp_a, curr_exp_b
@@ -303,7 +308,7 @@ class Formula:
                         exp_type, exp_a, exp_b = curr_exp_type, curr_exp_a, curr_exp_b
                         psi_i = i
                     elif exp_type == "gamma":
-                        if gamma_used.get(str(curr_exp_a), "") < gamma_used.get(str(exp_a), ""):
+                        if gamma_used.get(str(psi), "") < gamma_used.get(str(sigma[psi_i]), ""):
                             exp_type, exp_a, exp_b = curr_exp_type, curr_exp_a, curr_exp_b
                             psi_i = i
             
@@ -337,7 +342,7 @@ class Formula:
             elif exp_type == "gamma":
                 if not constants:
                     constants = "a"
-                    gamma_used[str(exp_a)] = "a"
+                    gamma_used[str(sigma[psi_i])] = "a"
                     exp_a = deepcopy(exp_a)
                     exp_a.replaceVar(exp_b, "a")
                     sigma.append(exp_a)
@@ -345,7 +350,7 @@ class Formula:
                     continue
                 
                 for c in constants:
-                    exp_a_str = str(exp_a)
+                    exp_a_str = str(sigma[psi_i])
                     if exp_a_str not in gamma_used or c not in gamma_used[exp_a_str]:
                         gamma_used[exp_a_str] = gamma_used.get(exp_a_str, "") + c
                         exp_a = deepcopy(exp_a)
@@ -356,12 +361,11 @@ class Formula:
                 else:
                     return 1
             
-            # print(sigma, tab)
             if DEBUG: print("")
         
         return 0
     
-    def _printTab(self, tab):
+    def _printTab(self, tab: list[Theory]):
         for i in range(len(tab)):
             print(f"Branch {i}")
             for fmla in tab[i][0]:
@@ -401,8 +405,7 @@ class Formula:
                 
         return False
     
-    def _expNode(self, psi: TFormula) -> Exp:
-        if DEBUG: print(f"Expanding: {psi}")
+    def _expNode(self, psi: TFormula):
         psi_type = type(psi)
         
         if psi_type is BinaryOp:
@@ -434,97 +437,9 @@ class Formula:
         return (None, None, None)
 
 
-def deepcopy(fmla):
-    fmla_type = type(fmla)
-
-    if fmla_type is Var:
-        new_fmla = Var.__new__(Var)
-        new_fmla.val = fmla.val
-        return new_fmla
-    if fmla_type is Atom:
-        new_fmla = Atom.__new__(Atom)
-        new_fmla.pred = fmla.pred
-        new_fmla.a = deepcopy(fmla.a)
-        new_fmla.b = deepcopy(fmla.b)
-        new_fmla.is_fol = True
-        new_fmla._str = fmla._str
-        return new_fmla
-    if fmla_type is Negation:
-        new_fmla = Negation.__new__(Negation)
-        new_fmla.a = deepcopy(fmla.a)
-        new_fmla.is_fol = fmla.is_fol
-        new_fmla._str = fmla._str
-        return new_fmla
-    if fmla_type is BinaryOp:
-        new_fmla = BinaryOp.__new__(BinaryOp)
-        new_fmla.a = deepcopy(fmla.a)
-        new_fmla.conn = BinaryConn(fmla.conn.val)
-        new_fmla.b = deepcopy(fmla.b)
-        new_fmla.is_fol = fmla.is_fol
-        new_fmla._str = fmla._str
-        return new_fmla
-    if fmla_type is UnaryOp:
-        new_fmla = UnaryOp.__new__(UnaryOp)
-        new_fmla.conn = UnaryConn(fmla.conn.val)
-        new_fmla.var = Var(fmla.var.val)
-        new_fmla.a = deepcopy(fmla.a)
-        new_fmla.is_fol = fmla.is_fol
-        new_fmla._str = fmla._str
-        return new_fmla
-    if fmla_type is Formula:
-        new_fmla = Formula.__new__(Formula)
-        new_fmla.fmla = deepcopy(fmla.fmla)
-        new_fmla.fmla_type = fmla.fmla_type
-        new_fmla.is_fol = fmla.is_fol
-        new_fmla.lhs = fmla.lhs
-        new_fmla.conn = fmla.conn
-        new_fmla.rhs = fmla.rhs
-        new_fmla._str = fmla._str
-        return new_fmla
-        
-    raise Exception(f"Couldn't make deepcopy of {fmla}")
-
-
-formula: Formula = Formula("")
-
-
-# Parse a formula, consult parseOutputs for return values.
-def parse(fmla: str) -> int:
-    global formula
-    formula = Formula(fmla)
-    return formula.getType()
-
-
-# Return the LHS of a binary connective formula
-def lhs(_: str) -> str:
-    global formula
-    return formula.lhs
-
-
-# Return the connective symbol of a binary connective formula
-def con(_: str) -> str:
-    global formula
-    return formula.conn
-
-
-# Return the RHS symbol of a binary connective formula
-def rhs(_: str) -> str:
-    global formula
-    return formula.rhs
-
-
-# You may choose to represent a theory as a set or a list
-def theory(_: str) -> list[Formula]:   # initialise a theory with a single formula in it
-    return []
-
-
-# Check for satisfiability
-def sat(_: list[list[Formula]]) -> int:
-    # output 0 if not satisfiable, output 1 if satisfiable, output 2 if number of constants exceeds MAX_CONSTANTS
-    return formula.isSat()
-
-
 if __name__ == "__main__":
+    formula: Formula = Formula("")
+    
     with open("input.txt") as f:
         parseOutputs = ["not a formula",
                         "an atom",
