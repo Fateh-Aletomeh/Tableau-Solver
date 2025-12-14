@@ -31,6 +31,7 @@ class Prop:
             raise ValueError()
         self.val: str = prop
         self.is_fol: bool = False
+        self.is_prop: bool = True
     
     def __repr__(self) -> str:
         return self.val
@@ -47,8 +48,9 @@ class Prop:
 
 class Negation:  
     def __init__(self, a: Union[str, Formula]) -> None:
-        self.a: Formula = Formula(a) if type(a) is str else a
+        self.a: Formula = Formula(a) if isinstance(a, str) else a
         self.is_fol: bool = self.a.is_fol
+        self.is_prop: bool = self.a.is_prop
         self._str: Optional[str] = None
     
     def __repr__(self) -> str:
@@ -83,6 +85,7 @@ class BinaryOp:
         self.conn: BinaryConn = BinaryConn(conn)
         self.b: Formula = Formula(b)
         self.is_fol: bool = self.a.is_fol or self.b.is_fol
+        self.is_prop: bool = self.a.is_prop or self.b.is_prop
         self._str: Optional[str] = None
     
     def __repr__(self) -> str:
@@ -118,6 +121,7 @@ class UnaryOp:
         self.var: Var = Var(var)
         self.a: Formula = Formula(a)
         self.is_fol: bool = True
+        self.is_prop: bool = self.a.is_prop
         self._str: Optional[str] = None
     
     def __repr__(self) -> str:
@@ -159,6 +163,7 @@ class Atom:
         self.a: Var = Var(a)
         self.b: Var = Var(b)
         self.is_fol: bool = True
+        self.is_prop: bool = False
         self._str: Optional[str] = None
     
     def __repr__(self) -> str:
@@ -186,10 +191,10 @@ Theory = tuple[list[TFormula], str, dict[str, str]]     # (Formulas, constants, 
 Exp = tuple[str, TFormula, Union[TFormula, str, None]]
 
 
-class Formula:    
+class Formula:
     def __init__(self, fmla: str) -> None:
         self.fmla: Optional[TFormula] = None
-        self.fmla_type: Optional[int] = None
+        self.fmla_type: int = 0
         self.is_fol: bool = self.fmla.is_fol if self.fmla is not None else False
         self.is_prop: bool = self.fmla.is_prop if self.fmla is not None else False
         self.lhs: str = ""
@@ -229,6 +234,7 @@ class Formula:
                                 
             self.is_fol = self.fmla.is_fol if self.fmla is not None else False
             self.is_prop = self.fmla.is_prop if self.fmla is not None else False
+            self.getType()
         except Exception as e:
             print(f"Failed:\n{e}")
             self.fmla = None
@@ -247,10 +253,7 @@ class Formula:
         self.fmla.replaceVar(orig_var, new_val)
         self._str = None
     
-    def getType(self) -> int:
-        if self.fmla_type is not None:
-            return self.fmla_type
-            
+    def getType(self) -> int:            
         fmla_type = type(self.fmla)
         
         if (self.is_fol and self.is_prop) or self.fmla is None or self.isWrong():
@@ -269,16 +272,15 @@ class Formula:
         elif fmla_type is Prop:
             self.fmla_type = 6
         
-        if self.fmla_type is None:
-            raise Exception(f"This shouldn't happen: {self.fmla}")
         return self.fmla_type
     
     def isSat(self) -> int:
         if self.fmla is None:
             return 0
         
-        tab = [([self.fmla], "", {})]
         if DEBUG: print("")
+        tab = [([self.fmla], "", {})]
+        
         while tab:
             if DEBUG: self._printTab(tab)
             
@@ -437,11 +439,9 @@ class Formula:
         return (None, None, None)
 
 
-if __name__ == "__main__":
-    formula: Formula = Formula("")
-    
+if __name__ == "__main__":    
     with open("input.txt") as f:
-        parseOutputs = ["not a formula",
+        parseOutputs = ("not a formula",
                         "an atom",
                         "a negation of a first order logic formula",
                         "a universally quantified formula",
@@ -449,8 +449,8 @@ if __name__ == "__main__":
                         "a binary connective first order formula",
                         "a proposition",
                         "a negation of a propositional formula",
-                        "a binary connective propositional formula"]
-        satOutput = ["is not satisfiable", "is satisfiable", "may or may not be satisfiable"]
+                        "a binary connective propositional formula")
+        satOutput = ("is not satisfiable", "is satisfiable", "may or may not be satisfiable")
         
         firstline = f.readline()
         PARSE = "PARSE" in firstline
@@ -459,17 +459,16 @@ if __name__ == "__main__":
         for line in f:
             if line[-1] == '\n':
                 line = line[:-1]
-            parsed = parse(line)
+            formula: Formula = Formula(line)
         
             if PARSE:
-                output = f"{line} is {parseOutputs[parsed]}."
-                if parsed in (5,8):
-                    output += f" Its left hand side is {lhs(line)}, its connective is {con(line)}, and its right hand side is {rhs(line)}."
+                output = f"{line} is {parseOutputs[formula.fmla_type]}."
+                if formula.fmla_type in (5,8):
+                    output += f" Its left hand side is {formula.lhs}, its connective is {formula.conn}, and its right hand side is {formula.rhs}."
                 print(output)
         
             if SAT:
-                if parsed:
-                    tableau = [theory(line)]
-                    print(f"{line} {satOutput[sat(tableau)]}")
+                if formula.fmla_type:
+                    print(f"{line} {satOutput[formula.isSat()]}")
                 else:
                     print(f"{line} is not a formula")
