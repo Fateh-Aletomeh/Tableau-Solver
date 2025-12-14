@@ -1,7 +1,3 @@
-import cProfile
-import pstats
-
-
 MAX_CONSTANTS: int = 10
 PROP: str = "pqrs"
 VAR: str = "abcdefghijxyzw"
@@ -12,9 +8,7 @@ BINARY_CONN: list[str] = ['&', '\\/', '->']
 DEBUG: bool = False
 
 
-class Var:
-    __slots__ = ("val",)
-    
+class Var:   
     def __init__(self, var: str | None) -> None:
         if var is None or len(var) != 1 or var not in VAR:
             raise ValueError()
@@ -27,9 +21,7 @@ class Var:
         return self.val == other.val
 
 
-class Prop:
-    __slots__ = ("val", "is_fol")
-    
+class Prop:    
     def __init__(self, prop: str | None) -> None:
         if prop is None or len(prop) != 1 or prop not in PROP:
             raise ValueError()
@@ -49,9 +41,7 @@ class Prop:
         return
 
 
-class Negation:
-    __slots__ = ("a", "is_fol", "_str")
-    
+class Negation:  
     def __init__(self, a) -> None:
         # a: str | Formula
         self.a: Formula = Formula(a) if type(a) is str else a
@@ -74,9 +64,7 @@ class Negation:
         self._str = None
 
 
-class BinaryConn:
-    __slots__ = ("val",)
-    
+class BinaryConn:    
     def __init__(self, conn: str | None) -> None:
         if conn is None or conn not in BINARY_CONN:
             raise ValueError()
@@ -86,9 +74,7 @@ class BinaryConn:
         return self.val
 
 
-class BinaryOp:
-    __slots__ = ("a", "conn", "b", "is_fol", "_str")
-    
+class BinaryOp:    
     def __init__(self, a: str, conn: str, b: str) -> None:
         self.a: Formula = Formula(a)
         self.conn: BinaryConn = BinaryConn(conn)
@@ -113,9 +99,7 @@ class BinaryOp:
         self._str = None
 
 
-class UnaryConn:
-    __slots__ = ("val",)
-    
+class UnaryConn:    
     def __init__(self, conn: str | None) -> None:
         if conn is None or conn not in UNARY_CONN:
             raise ValueError()
@@ -125,9 +109,7 @@ class UnaryConn:
         return self.val
 
 
-class UnaryOp:
-    __slots__ = ("conn", "var", "a", "is_fol", "_str")
-    
+class UnaryOp:    
     def __init__(self, conn: str, var: str, a: str) -> None:
         self.conn: UnaryConn = UnaryConn(conn)
         self.var: Var = Var(var)
@@ -152,9 +134,7 @@ class UnaryOp:
             self._str = None
 
 
-class Pred:
-    __slots__ = ("val",)
-    
+class Pred:    
     def __init__(self, pred: str | None) -> None:
         if pred is None or len(pred) != 1 or pred not in PRED:
             raise ValueError()
@@ -170,9 +150,7 @@ class Pred:
         return
 
 
-class Atom:
-    __slots__ = ("pred", "a", "b", "is_fol", "_str")
-    
+class Atom:    
     def __init__(self, pred: str, a: str, b: str) -> None:
         self.pred: Pred = Pred(pred)
         self.a: Var = Var(a)
@@ -205,9 +183,7 @@ Theory = tuple[list[TFormula], str, dict[str, str]]     # (Formulas, constants, 
 Exp = tuple[str, TFormula, TFormula | str | None]
 
 
-class Formula:
-    __slots__ = ("fmla", "fmla_type", "is_fol", "lhs", "conn", "rhs", "_str")
-    
+class Formula:    
     def __init__(self, fmla: str) -> None:
         self.fmla: TFormula | None = None
         self.fmla_type: int | None = None
@@ -548,55 +524,37 @@ def sat(_: list[list[Formula]]) -> int:
     return formula.isSat()
 
 
-#------------------------------------------------------------------------------------------------------------------------------:
-#                                            DO NOT MODIFY THE CODE BELOW THIS LINE!                                           :
-#------------------------------------------------------------------------------------------------------------------------------:
-
-f = open('input.txt')
-
-parseOutputs = ['not a formula',
-                'an atom',
-                'a negation of a first order logic formula',
-                'a universally quantified formula',
-                'an existentially quantified formula',
-                'a binary connective first order formula',
-                'a proposition',
-                'a negation of a propositional formula',
-                'a binary connective propositional formula']
-
-satOutput = ['is not satisfiable', 'is satisfiable', 'may or may not be satisfiable']
-
-
-
-firstline = f.readline()
-
-PARSE = False
-if 'PARSE' in firstline:
-    PARSE = True
-
-SAT = False
-if 'SAT' in firstline:
-    SAT = True
-
-for line in f:
-    if line[-1] == '\n':
-        line = line[:-1]
-    parsed = parse(line)
-
-    if PARSE:
-        output = "%s is %s." % (line, parseOutputs[parsed])
-        if parsed in [5,8]:
-            output += " Its left hand side is %s, its connective is %s, and its right hand side is %s." % (lhs(line), con(line) ,rhs(line))
-        print(output)
-
-    if SAT:
-        if parsed:
-            tableau = [theory(line)]
-            profiler = cProfile.Profile()
-            profiler.enable()
-            print('%s %s.' % (line, satOutput[sat(tableau)]))
-            profiler.disable()
-            stats = pstats.Stats(profiler)
-            stats.dump_stats("rawstats2")
-        else:
-            print('%s is not a formula.' % line)
+if __name__ == "__main__":
+    with open("input.txt") as f:
+        parseOutputs = ["not a formula",
+                        "an atom",
+                        "a negation of a first order logic formula",
+                        "a universally quantified formula",
+                        "an existentially quantified formula",
+                        "a binary connective first order formula",
+                        "a proposition",
+                        "a negation of a propositional formula",
+                        "a binary connective propositional formula"]
+        satOutput = ["is not satisfiable", "is satisfiable", "may or may not be satisfiable"]
+        
+        firstline = f.readline()
+        PARSE = "PARSE" in firstline
+        SAT = "SAT" in firstline
+        
+        for line in f:
+            if line[-1] == '\n':
+                line = line[:-1]
+            parsed = parse(line)
+        
+            if PARSE:
+                output = f"{line} is {parseOutputs[parsed]}."
+                if parsed in (5,8):
+                    output += f" Its left hand side is {lhs(line)}, its connective is {con(line)}, and its right hand side is {rhs(line)}."
+                print(output)
+        
+            if SAT:
+                if parsed:
+                    tableau = [theory(line)]
+                    print(f"{line} {satOutput[sat(tableau)]}")
+                else:
+                    print(f"{line} is not a formula")
